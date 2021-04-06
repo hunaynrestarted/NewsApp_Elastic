@@ -1,0 +1,174 @@
+﻿@model IEnumerable<NewsAPP_Elastic.Models.News>
+
+
+@Styles.Render("~/Content/css")
+
+
+@using (Ajax.BeginForm("GetNewsData", "News", null, new AjaxOptions() { LoadingElementId = "divProcessing", HttpMethod = "Get", UpdateTargetId = "NewssGrid" }, htmlAttributes: new { @id = "NewsInfo" }))
+{
+
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <b>News</b> (Via Elastic Search)
+        </div>
+        <div class="panel-body">
+            <div class="row">
+                <div class="col-xs-8">
+                    <div class="input-group">
+                        <div class="form-outline">
+                            <input type="text" class="form-control" id="TxtSearchNews" placeholder="Search" />
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xs-4">
+                    <div class="pull-right" style="margin-bottom: 5px;">
+                        <button class="btn btn-default" id="exportImage">Export as an Image</button>
+                        <button class="btn btn-default" id="exportPdf">Export as PDF</button>
+                    </div>
+                </div>
+                <div id="NewssGrid">
+                    <div id="divProcessing" class="processingButton" style="display: none;">
+                        <img width="31" height="31" alt="" class="LoadingImage" src="~/Content/ajax-loader.gif" />
+                    </div>
+
+                    @Html.Partial("_PartialNews", Model)
+                </div>
+            </div>
+        </div>
+
+
+        <div class="clearfix"></div>
+
+    </div>
+}
+
+@section scripts{
+    @Scripts.Render("~/Scripts/jquery.unobtrusive-ajax.min.js")
+    <script src="~/Scripts/html2canvas.js"></script>
+    <script src="~/Scripts/jspdf.min.js"></script>
+    <script type="text/javascript" src="~/Scripts/jspdf.plugin.autotable.min.js"></script>
+    <script type="text/javascript">
+
+    var timer;
+    $("#TxtSearchNews").on('keyup', function (event) {
+        clearTimeout(timer);  //clear any running timeout on key up
+        timer = setTimeout(function () { //then give it a second to see if the user is finished typing
+            $.ajax({
+                url: '@Url.Action("GetNewsData", "News")',
+                dataType: "html",
+                data: { page:@ViewBag.PageNumber, pageSize:@ViewBag.PageSize, SortExpression: '@ViewBag.CurrentSort', newsTitle: $('#TxtSearchNews').val() },
+                type: "Get",
+                success: function (data) {
+                    $("#divProcessing").hide();
+                    $('#NewssGrid').html(data);
+                },
+                beforeSend: function () {
+                    $("#divProcessing").show();
+                }
+            })
+        },0.3)
+    });
+    </script>
+
+    <script type="text/javascript">
+
+        $('#exportPdf').on('click', function (event) {
+
+            event.preventDefault();
+
+            var doc = new jspdf.jsPDF()
+
+            doc.autoTable({ html: '#news-table' })
+
+            doc.save('news.pdf')
+        });
+
+        $('#exportImage').on('click', function (event) {
+
+            event.preventDefault();
+            console.log('exporting');
+            //$('#news-table').tableExport({type:'png',escape:'false'});
+
+            html2canvas($('#news-table'), {
+                onrendered: function (canvas) {
+                    var img = canvas.toDataURL("image/png");
+                    //var img = canvas.toDataURL("application/octet-stream");
+
+                    function saveAs(uri, filename) {
+                        var link = document.createElement('a');
+                        if (typeof link.download === 'string') {
+                            document.body.appendChild(link);
+                            link.download = filename;
+                            link.href = uri;
+                            link.click();
+                            document.body.removeChild(link);
+                        } else {
+                            location.replace(uri);
+                        }
+                    }
+
+                    var uri = img.replace(/^data:image\/[^;]/, 'data:application/octet-stream');
+                    //window.open(url);
+                    saveAs(uri, 'NewsExport.png');
+
+
+                }
+            });
+        });
+
+
+
+
+    </script>
+
+    <script>
+        function sortTable(n) {
+            var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+            table = document.getElementById("news-table");
+            switching = true;
+            
+            dir = "asc";
+          
+            while (switching) {
+                
+                switching = false;
+                rows = table.rows;
+                
+                for (i = 1; i < (rows.length - 1); i++) {
+                   
+                    shouldSwitch = false;
+      
+                    x = rows[i].getElementsByTagName("TD")[n];
+                    y = rows[i + 1].getElementsByTagName("TD")[n];
+                 
+                    if (dir == "asc") {
+                        if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+                           
+                            shouldSwitch = true;
+                            break;
+                        }
+                    } else if (dir == "desc") {
+                        if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
+                            
+                            shouldSwitch = true;
+                            break;
+                        }
+                    }
+                }
+                if (shouldSwitch) {
+                  
+                    rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                    switching = true;
+                    
+                    switchcount++;
+                } else {
+                    
+                    if (switchcount == 0 && dir == "asc") {
+                        dir = "desc";
+                        switching = true;
+                    }
+                }
+            }
+        }
+    </script>
+}

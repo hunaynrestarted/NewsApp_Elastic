@@ -1,0 +1,88 @@
+﻿
+@model IEnumerable<NewsAPP_Elastic.Models.News>
+
+<link href="~/Content/Custom.css" rel="stylesheet" />
+
+<table class="table-responsive table" id="news-table">
+    <thead>
+        <tr>
+            <th class="thStyle">
+                News ID
+            </th>
+            <th onclick="sortTable(0)" class="thStyle">
+                News Title
+            </th>
+            <th class="thStyle">
+                Published?
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model.Count() > 0)
+        {
+            foreach (var item in Model)
+            {
+                <tr>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.NewsID)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.NewsTitle)
+                    </td>
+                    <td>
+                        
+                        @Html.DisplayTextFor(modelItem => item.IsPublished)
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr>
+                <td>
+                    No Data Found
+                </td>
+            </tr>
+
+        }
+    </tbody>
+</table>
+<div class="col-sm-12">
+    @if (@ViewBag.PageNumber > 1)
+    { 
+        @Ajax.ActionLink("Previous", // <-- Text to display
+     "GetNewsData", // <-- Action Method Name
+      new { @page = ViewBag.PageNumber - 1, @newsTitle = ViewBag.SearchParam },
+     new AjaxOptions
+     {
+         InsertionMode = InsertionMode.Replace,
+         HttpMethod = "Get",
+         UpdateTargetId = "NewssGrid",
+         LoadingElementId = "divProcessing"
+     },
+          new { @class = "btn btn-default pull-left" })
+    }
+
+    <!--If Current Page is not the Last Page then show Next and Last Button/link on Paging-->
+    @if (@ViewBag.PageNumber < @ViewBag.TotalPages)
+    {
+         
+        @Ajax.ActionLink("Next", // <-- Text to display
+         "GetNewsData", // <-- Action Method Name
+          new { page = ViewBag.PageNumber + 1, newsTitle = ViewBag.SearchParam },
+         new AjaxOptions
+         {
+             InsertionMode = InsertionMode.Replace,
+             HttpMethod = "Get",
+             UpdateTargetId = "NewssGrid",
+             LoadingElementId = "divProcessing"
+         },
+          new { @class = "btn btn-default pull-right" })
+    }
+</div>
+ 
+<div id="divProcessing" class="processingButton" style="display: none;">
+    <img width="31" height="31" alt="" class="LoadingImage" src="~/Content/ajax-loader.gif" />
+</div>
+ 
+
